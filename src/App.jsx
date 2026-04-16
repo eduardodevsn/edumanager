@@ -6,8 +6,12 @@ import {
 import {
   LayoutDashboard, Package, ShoppingCart, Users,
   Plus, Pencil, Trash2, X, Search, AlertTriangle,
-  TrendingUp, BarChart2, CheckCircle, ArrowUpRight,
+  TrendingUp, BarChart2, CheckCircle, ArrowUpRight, LogOut,
 } from 'lucide-react'
+import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { auth } from './firebase'
+import Login    from './Login'
+import Register from './Register'
 
 /* ═══════════════════════════════════════════════════════════
    GLOBAL CSS — injected once on mount
@@ -169,56 +173,20 @@ const todayStr = () => new Date().toLocaleDateString('es-PY', { weekday: 'long',
 /* ═══════════════════════════════════════════════════════════
    MOCK DATA
 ═══════════════════════════════════════════════════════════ */
-const INIT_PRODUCTS = [
-  { id: uid(), name: 'Laptop Dell XPS 15',        category: 'Electrónica',    stock: 8,  price: 4500000, status: 'activo'   },
-  { id: uid(), name: 'iPhone 14 Pro',              category: 'Electrónica',    stock: 15, price: 3200000, status: 'activo'   },
-  { id: uid(), name: 'Silla Gamer RGB Pro',        category: 'Muebles',        stock: 4,  price: 890000,  status: 'activo'   },
-  { id: uid(), name: 'Monitor LG UltraWide 27"',   category: 'Electrónica',    stock: 12, price: 1250000, status: 'activo'   },
-  { id: uid(), name: 'Teclado Mecánico HyperX',    category: 'Accesorios',     stock: 3,  price: 320000,  status: 'activo'   },
-  { id: uid(), name: 'Mouse Logitech MX Master 3', category: 'Accesorios',     stock: 22, price: 185000,  status: 'activo'   },
-  { id: uid(), name: 'Auriculares Sony WH-1000XM5',category: 'Audio',          stock: 7,  price: 450000,  status: 'activo'   },
-  { id: uid(), name: 'Webcam Logitech C920 HD',    category: 'Accesorios',     stock: 9,  price: 280000,  status: 'activo'   },
-  { id: uid(), name: 'Tablet Samsung Galaxy A8',   category: 'Electrónica',    stock: 2,  price: 1100000, status: 'inactivo' },
-  { id: uid(), name: 'Parlante JBL Flip 6',        category: 'Audio',          stock: 11, price: 350000,  status: 'activo'   },
-  { id: uid(), name: 'Disco SSD Samsung 1TB',      category: 'Almacenamiento', stock: 5,  price: 420000,  status: 'activo'   },
-  { id: uid(), name: 'Hub USB-C 7en1',             category: 'Accesorios',     stock: 1,  price: 195000,  status: 'activo'   },
-]
+const INIT_PRODUCTS = []
+const INIT_CLIENTS  = []
+const INIT_SALES    = []
 
-const INIT_CLIENTS = [
-  { id: uid(), name: 'Carlos Martínez', email: 'carlos@gmail.com',  phone: '+595 981 234 567', totalPurchases: 4500000, status: 'activo',   since: daysAgo(90)  },
-  { id: uid(), name: 'María González',  email: 'maria@gmail.com',   phone: '+595 982 345 678', totalPurchases: 2300000, status: 'activo',   since: daysAgo(50)  },
-  { id: uid(), name: 'Roberto Pérez',   email: 'roberto@gmail.com', phone: '+595 983 456 789', totalPurchases: 8900000, status: 'activo',   since: daysAgo(180) },
-  { id: uid(), name: 'Ana López',       email: 'ana@gmail.com',     phone: '+595 984 567 890', totalPurchases: 1200000, status: 'activo',   since: daysAgo(35)  },
-  { id: uid(), name: 'Diego Fernández', email: 'diego@gmail.com',   phone: '+595 985 678 901', totalPurchases: 5600000, status: 'activo',   since: daysAgo(72)  },
-  { id: uid(), name: 'Laura Sánchez',   email: 'laura@gmail.com',   phone: '+595 986 789 012', totalPurchases: 3400000, status: 'inactivo', since: daysAgo(120) },
-  { id: uid(), name: 'Juan Ramírez',    email: 'juan@gmail.com',    phone: '+595 987 890 123', totalPurchases: 7800000, status: 'activo',   since: daysAgo(60)  },
-  { id: uid(), name: 'Sofía Torres',    email: 'sofia@gmail.com',   phone: '+595 988 901 234', totalPurchases: 2100000, status: 'activo',   since: daysAgo(18)  },
-]
-
-const INIT_SALES = [
-  { id: uid(), date: daysAgo(0), client: 'Carlos Martínez', product: 'Laptop Dell XPS 15',         qty: 1, total: 4500000 },
-  { id: uid(), date: daysAgo(0), client: 'María González',  product: 'Mouse Logitech MX Master 3', qty: 2, total: 370000  },
-  { id: uid(), date: daysAgo(1), client: 'Roberto Pérez',   product: 'iPhone 14 Pro',              qty: 1, total: 3200000 },
-  { id: uid(), date: daysAgo(1), client: 'Ana López',       product: 'Auriculares Sony WH-1000XM5',qty: 1, total: 450000  },
-  { id: uid(), date: daysAgo(2), client: 'Diego Fernández', product: 'Monitor LG UltraWide 27"',   qty: 2, total: 2500000 },
-  { id: uid(), date: daysAgo(2), client: 'Laura Sánchez',   product: 'Teclado Mecánico HyperX',    qty: 1, total: 320000  },
-  { id: uid(), date: daysAgo(3), client: 'Juan Ramírez',    product: 'Tablet Samsung Galaxy A8',   qty: 1, total: 1100000 },
-  { id: uid(), date: daysAgo(4), client: 'Sofía Torres',    product: 'Parlante JBL Flip 6',        qty: 2, total: 700000  },
-  { id: uid(), date: daysAgo(4), client: 'Carlos Martínez', product: 'Disco SSD Samsung 1TB',      qty: 1, total: 420000  },
-  { id: uid(), date: daysAgo(5), client: 'María González',  product: 'Webcam Logitech C920 HD',    qty: 1, total: 280000  },
-  { id: uid(), date: daysAgo(5), client: 'Roberto Pérez',   product: 'Silla Gamer RGB Pro',        qty: 1, total: 890000  },
-  { id: uid(), date: daysAgo(6), client: 'Ana López',       product: 'Hub USB-C 7en1',             qty: 1, total: 195000  },
-]
-
-const WEEKLY_CHART = [
-  { day: 'Lun', ventas: 850000  },
-  { day: 'Mar', ventas: 1200000 },
-  { day: 'Mié', ventas: 750000  },
-  { day: 'Jue', ventas: 1800000 },
-  { day: 'Vie', ventas: 2100000 },
-  { day: 'Sáb', ventas: 980000  },
-  { day: 'Dom', ventas: 650000  },
-]
+function buildWeeklyChart(sales) {
+  const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() - (6 - i))
+    const dateStr = d.toISOString().slice(0, 10)
+    const ventas  = sales.filter(s => s.date === dateStr).reduce((a, s) => a + s.total, 0)
+    return { day: days[d.getDay()], ventas }
+  })
+}
 
 /* ═══════════════════════════════════════════════════════════
    TOAST SYSTEM
@@ -356,12 +324,13 @@ function SectionHeader({ title, subtitle, action }) {
    DASHBOARD VIEW
 ═══════════════════════════════════════════════════════════ */
 function DashboardView({ products, clients, sales }) {
-  const today = daysAgo(0)
+  const today        = daysAgo(0)
   const todaySales   = sales.filter(s => s.date === today)
   const todayRevenue = todaySales.reduce((a, s) => a + s.total, 0)
   const monthRevenue = sales.reduce((a, s) => a + s.total, 0)
   const totalStock   = products.reduce((a, p) => a + p.stock, 0)
   const lowStock     = products.filter(p => p.stock > 0 && p.stock < 5)
+  const weeklyChart  = buildWeeklyChart(sales)
 
   const ChartTooltip = ({ active, payload }) => {
     if (!active || !payload?.length) return null
@@ -414,7 +383,7 @@ function DashboardView({ products, clients, sales }) {
             <span className="badge b-green">Esta semana</span>
           </div>
           <ResponsiveContainer width="100%" height={210}>
-            <AreaChart data={WEEKLY_CHART} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+            <AreaChart data={weeklyChart} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
               <defs>
                 <linearGradient id="gGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%"  stopColor="#00FF87" stopOpacity={0.2} />
@@ -903,7 +872,7 @@ const NAV_ITEMS = [
   { id: 'clientes',   label: 'Clientes',   icon: Users            },
 ]
 
-function Sidebar({ active, setActive }) {
+function Sidebar({ active, setActive, user }) {
   return (
     <aside style={{
       width: SIDEBAR_W, minWidth: SIDEBAR_W,
@@ -949,9 +918,9 @@ function Sidebar({ active, setActive }) {
             background: 'rgba(0,255,135,.12)', border: '1px solid rgba(0,255,135,.22)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '.82rem', fontWeight: 800, color: '#00FF87',
-          }}>E</div>
+          }}>{user?.email?.[0]?.toUpperCase() ?? '?'}</div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: '.82rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Edu Canete</div>
+            <div style={{ fontSize: '.82rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email ?? ''}</div>
             <div style={{ fontSize: '.68rem', color: 'rgba(255,255,255,.3)' }}>Administrador</div>
           </div>
         </div>
@@ -963,11 +932,16 @@ function Sidebar({ active, setActive }) {
 /* ═══════════════════════════════════════════════════════════
    APP ROOT
 ═══════════════════════════════════════════════════════════ */
+const HEADER_H = 56
+
 export default function App() {
-  const [active,   setActive]   = useState('dashboard')
-  const [products, setProducts] = useState(INIT_PRODUCTS)
-  const [clients,  setClients]  = useState(INIT_CLIENTS)
-  const [sales,    setSales]    = useState(INIT_SALES)
+  const [active,      setActive]      = useState('dashboard')
+  const [products,    setProducts]    = useState(INIT_PRODUCTS)
+  const [clients,     setClients]     = useState(INIT_CLIENTS)
+  const [sales,       setSales]       = useState(INIT_SALES)
+  const [user,        setUser]        = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [authScreen,  setAuthScreen]  = useState('login')
   const { toasts, add: toast, remove } = useToast()
 
   // Inject global styles once
@@ -978,6 +952,33 @@ export default function App() {
     return () => document.head.removeChild(el)
   }, [])
 
+  // Listen Firebase auth state
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u)
+      setAuthLoading(false)
+    })
+    return unsub
+  }, [])
+
+  const handleLogout = async () => {
+    await signOut(auth)
+  }
+
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ fontSize: '.9rem', color: 'rgba(255,255,255,.35)' }}>Cargando...</div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return authScreen === 'login'
+      ? <Login    onGoRegister={() => setAuthScreen('register')} />
+      : <Register onGoLogin={() => setAuthScreen('login')} />
+  }
+
   const views = {
     dashboard:  <DashboardView  products={products} clients={clients} sales={sales} />,
     inventario: <InventoryView  products={products} setProducts={setProducts} toast={toast} />,
@@ -987,12 +988,46 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <Sidebar active={active} setActive={setActive} />
+      <Sidebar active={active} setActive={setActive} user={user} />
+
+      {/* Top header */}
+      <header style={{
+        position: 'fixed',
+        top: 0, left: SIDEBAR_W, right: 0,
+        height: HEADER_H,
+        background: 'rgba(0,0,0,.92)',
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(255,255,255,.055)',
+        display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+        paddingInline: 28,
+        gap: 14,
+        zIndex: 100,
+      }}>
+        <span style={{ fontSize: '.82rem', color: 'rgba(255,255,255,.45)' }}>
+          {user.email}
+        </span>
+        <button
+          onClick={handleLogout}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 7,
+            background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)',
+            borderRadius: 9, padding: '7px 13px',
+            color: 'rgba(255,255,255,.7)', fontSize: '.8rem', fontWeight: 600,
+            cursor: 'pointer', transition: 'all .2s',
+          }}
+          onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,68,68,.1)'; e.currentTarget.style.color = '#FF6B6B'; e.currentTarget.style.borderColor = 'rgba(255,68,68,.25)' }}
+          onMouseOut={e  => { e.currentTarget.style.background = 'rgba(255,255,255,.06)'; e.currentTarget.style.color = 'rgba(255,255,255,.7)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,.1)' }}
+        >
+          <LogOut size={14} />
+          Cerrar sesión
+        </button>
+      </header>
 
       <main style={{
         marginLeft: SIDEBAR_W,
         flex: 1,
-        padding: '36px 36px 56px',
+        paddingTop: HEADER_H + 36,
+        padding: `${HEADER_H + 36}px 36px 56px`,
         background: '#000',
         minHeight: '100vh',
         overflowY: 'auto',
